@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>沙丘领主 Demo</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div id="game-shell">
+      <canvas id="world" width="900" height="1500"></canvas>
+
+      <section class="hud top-left">
+        <div class="resource-line"><span>🌾 粮食</span><strong id="food">70049</strong><em id="foodRate">+3592</em></div>
+        <div class="resource-line"><span>🪵 木材</span><strong id="wood">65721</strong><em id="woodRate">+4857</em></div>
+        <div class="resource-line"><span>🪨 石材</span><strong id="stone">60922</strong><em id="stoneRate">+4178</em></div>
+      </section>
+
+      <section class="hud top-right">
+        <div class="badge">🪙 <strong id="coin">12</strong></div>
+        <div class="badge">🎁 <strong>25/50</strong></div>
+        <button id="expand-btn" class="action">扩张领地</button>
+      </section>
+
+      <section class="hud side-left">
+        <div class="side-item">📜 <strong id="scroll">225</strong></div>
+        <div class="side-item">💎 <strong id="gem">45</strong></div>
+        <div class="side-item">🎟 <strong id="ticket">20</strong></div>
+        <div class="side-item">🧭 <strong id="compass">4</strong></div>
+      </section>
+
+      <section class="hud bottom">
+        <button class="menu-btn">🏰 城镇</button>
+        <button class="menu-btn">🐾 征召</button>
+        <button class="menu-btn">📦 背包</button>
+        <button class="menu-btn">🛒 市场</button>
+        <button class="menu-btn">🗺 战役</button>
+      </section>
+
+      <section class="chat">【军师】扩张更多农庄，粮食产量会更高。</section>
+      <section class="tip" id="tip">点击建筑查看信息，点击“扩张领地”创建新边界。</section>
+    </div>
+
+    <script src="game.js"></script>
+  </body>
+</html>
