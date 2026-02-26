@@ -1,169 +1,301 @@
-const canvas = document.getElementById('world');
-const ctx = canvas.getContext('2d');
+const MAP_SIZE = 600;
+const TOTAL_PLAYERS = 500;
+const USER_ID = 0;
+const VIEW_SIZE = 40;
+
+const worldCanvas = document.getElementById('world');
+const wctx = worldCanvas.getContext('2d');
+const battleCanvas = document.getElementById('battle');
+const bctx = battleCanvas.getContext('2d');
 
 const ui = {
-  food: document.getElementById('food'),
-  wood: document.getElementById('wood'),
-  stone: document.getElementById('stone'),
-  foodRate: document.getElementById('foodRate'),
-  woodRate: document.getElementById('woodRate'),
-  stoneRate: document.getElementById('stoneRate'),
-  coin: document.getElementById('coin'),
-  tip: document.getElementById('tip'),
+  castlePos: document.getElementById('castle-pos'),
+  playerCount: document.getElementById('player-count'),
+  myTerritory: document.getElementById('my-territory'),
+  mySoldiers: document.getElementById('my-soldiers'),
+  log: document.getElementById('battle-log'),
+  nextTurn: document.getElementById('next-turn'),
 };
 
-const state = {
-  food: 70049,
-  wood: 65721,
-  stone: 60922,
-  coin: 12,
-  zones: [
-    { x: 370, y: 760, w: 220, h: 200 },
-    { x: 300, y: 860, w: 280, h: 160 },
-    { x: 220, y: 620, w: 360, h: 420 },
-  ],
-  buildings: [
-    { name: '主城', x: 460, y: 860, type: 'castle', level: 9 },
-    { name: '农庄', x: 520, y: 740, type: 'farm', level: 5 },
-    { name: '农庄', x: 370, y: 740, type: 'farm', level: 4 },
-    { name: '农庄', x: 380, y: 930, type: 'farm', level: 4 },
-    { name: '农庄', x: 520, y: 960, type: 'farm', level: 3 },
-  ],
-  selectedBuilding: null,
-};
+const world = new Map();
+const players = [];
+let activeBattle = null;
 
-function drawGround() {
-  ctx.fillStyle = '#d7a55f';
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
+function key(x, y) { return `${x},${y}`; }
+function rand(max) { return Math.floor(Math.random() * max); }
 
-  for (let i = 0; i < 420; i += 1) {
-    const x = (i * 137) % canvas.width;
-    const y = (i * 89) % canvas.height;
-    ctx.fillStyle = i % 3 === 0 ? '#b88748' : '#e8c27f';
-    ctx.fillRect(x, y, 8, 6);
-    ctx.fillStyle = '#a9c661';
-    if (i % 8 === 0) ctx.fillRect(x + 6, y - 1, 3, 3);
-  }
-
-  ctx.fillStyle = '#63b8c8';
-  ctx.beginPath();
-  ctx.roundRect(70, 100, 320, 90, 24);
-  ctx.roundRect(380, 1290, 200, 180, 26);
-  ctx.fill();
-
-  ctx.fillStyle = '#7dc6d6';
-  ctx.beginPath();
-  ctx.roundRect(88, 110, 270, 55, 20);
-  ctx.roundRect(395, 1320, 160, 120, 22);
-  ctx.fill();
+function addCell(x, y, owner, isCastle = false) {
+  world.set(key(x, y), { owner, isCastle });
 }
 
-function drawZones() {
-  ctx.strokeStyle = '#2e9ad6';
-  ctx.lineWidth = 3;
-  state.zones.forEach((zone) => {
-    ctx.strokeRect(zone.x, zone.y, zone.w, zone.h);
-  });
+function getCell(x, y) {
+  if (x < 0 || y < 0 || x >= MAP_SIZE || y >= MAP_SIZE) return null;
+  return world.get(key(x, y)) || { owner: -1, isCastle: false };
 }
 
-function drawBuilding(building) {
-  const { x, y, type, name, level } = building;
-  if (type === 'castle') {
-    ctx.fillStyle = '#d4dbc7';
-    ctx.fillRect(x - 36, y - 40, 72, 86);
-    ctx.fillStyle = '#58a8b8';
-    ctx.fillRect(x - 42, y - 47, 84, 18);
-    ctx.fillStyle = '#845f42';
-    ctx.fillRect(x - 10, y + 6, 20, 26);
-    ctx.fillStyle = '#2f76c4';
-    ctx.fillRect(x - 14, y - 12, 28, 22);
-  } else {
-    ctx.fillStyle = '#a6c4bf';
-    ctx.beginPath();
-    ctx.arc(x, y, 28, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = '#4f8cc2';
-    ctx.beginPath();
-    ctx.arc(x, y - 20, 16, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = '#ead9b7';
-    ctx.fillRect(x - 20, y + 2, 40, 20);
-  }
+function setOwner(x, y, owner) {
+  const k = key(x, y);
+  const old = world.get(k);
+  world.set(k, { owner, isCastle: old?.isCastle || false });
+}
 
-  ctx.fillStyle = 'rgba(67, 45, 29, 0.8)';
-  ctx.fillRect(x - 50, y - 72, 100, 24);
-  ctx.fillStyle = '#fff';
-  ctx.font = '14px sans-serif';
-  ctx.textAlign = 'center';
-  ctx.fillText(`${name} Lv.${level}`, x, y - 55);
+function neighbors(x, y) {
+  return [
+    [x + 1, y], [x - 1, y], [x, y + 1], [x, y - 1],
+  ].filter(([nx, ny]) => nx >= 0 && ny >= 0 && nx < MAP_SIZE && ny < MAP_SIZE);
+}
 
-  if (state.selectedBuilding === building) {
-    ctx.strokeStyle = '#ffe17e';
-    ctx.lineWidth = 4;
-    ctx.strokeRect(x - 44, y - 52, 88, 98);
+function initPlayers() {
+  const occupied = new Set();
+  for (let i = 0; i < TOTAL_PLAYERS; i += 1) {
+    let x = rand(MAP_SIZE);
+    let y = rand(MAP_SIZE);
+    while (occupied.has(key(x, y))) {
+      x = rand(MAP_SIZE);
+      y = rand(MAP_SIZE);
+    }
+    occupied.add(key(x, y));
+    players.push({
+      id: i,
+      x,
+      y,
+      territory: 1,
+      soldiers: 30,
+      color: i === USER_ID ? '#3da9ff' : `hsl(${(i * 37) % 360} 70% 55%)`,
+    });
+    addCell(x, y, i, true);
   }
 }
 
-function draw() {
-  drawGround();
-  drawZones();
-  state.buildings.forEach(drawBuilding);
-}
-
-function updateResources() {
-  state.food += Math.floor(2 + Math.random() * 7);
-  state.wood += Math.floor(2 + Math.random() * 8);
-  state.stone += Math.floor(1 + Math.random() * 6);
-
-  ui.food.textContent = state.food;
-  ui.wood.textContent = state.wood;
-  ui.stone.textContent = state.stone;
-  ui.coin.textContent = state.coin;
-
-  draw();
-}
-
-function distance(a, b) {
-  return Math.hypot(a.x - b.x, a.y - b.y);
-}
-
-canvas.addEventListener('click', (event) => {
-  const rect = canvas.getBoundingClientRect();
-  const x = ((event.clientX - rect.left) / rect.width) * canvas.width;
-  const y = ((event.clientY - rect.top) / rect.height) * canvas.height;
-
-  const pick = state.buildings
-    .map((b) => ({ b, d: distance({ x, y }, b) }))
-    .sort((m, n) => m.d - n.d)[0];
-
-  if (pick && pick.d < 52) {
-    state.selectedBuilding = pick.b;
-    ui.tip.textContent = `已选择 ${pick.b.name}（Lv.${pick.b.level}）。升级可提升资源产量。`;
-  } else {
-    state.selectedBuilding = null;
-    ui.tip.textContent = '点击建筑查看信息，点击“扩张领地”创建新边界。';
+function ownerCellsAround(player) {
+  const list = [];
+  for (const [k, v] of world.entries()) {
+    if (v.owner !== player.id) continue;
+    const [x, y] = k.split(',').map(Number);
+    list.push([x, y]);
   }
+  return list;
+}
 
-  draw();
-});
+function findAttackTarget(player) {
+  const cells = ownerCellsAround(player);
+  for (let i = 0; i < 12; i += 1) {
+    const [x, y] = cells[rand(cells.length)] || [player.x, player.y];
+    const ns = neighbors(x, y);
+    for (const [nx, ny] of ns) {
+      if (getCell(nx, ny).owner === -1) return { from: [x, y], to: [nx, ny] };
+    }
+  }
+  return null;
+}
 
-document.getElementById('expand-btn').addEventListener('click', () => {
-  if (state.coin < 2) {
-    ui.tip.textContent = '金币不足，无法扩张。';
+function buildBattle(attackerId, defenderId, target) {
+  const attackerUnits = Array.from({ length: 10 }, (_, i) => ({ x: 0, y: i % 9, hp: 2, side: 'A' }));
+  const defenderCount = defenderId === -1 ? 6 : 10;
+  const defenderUnits = Array.from({ length: defenderCount }, (_, i) => ({ x: 8, y: i % 9, hp: 2, side: 'D' }));
+  return {
+    attackerId,
+    defenderId,
+    target,
+    turn: 1,
+    units: [...attackerUnits, ...defenderUnits],
+    finished: false,
+    winner: null,
+  };
+}
+
+function alive(side) {
+  return activeBattle.units.filter((u) => u.side === side && u.hp > 0);
+}
+
+function stepUnit(unit, enemies) {
+  if (unit.hp <= 0) return;
+  const near = enemies.reduce((best, e) => {
+    const d = Math.abs(e.x - unit.x) + Math.abs(e.y - unit.y);
+    return d < best.d ? { e, d } : best;
+  }, { e: null, d: Infinity }).e;
+  if (!near) return;
+
+  const dist = Math.abs(near.x - unit.x) + Math.abs(near.y - unit.y);
+  if (dist === 1) {
+    near.hp -= 1;
     return;
   }
 
-  state.coin -= 2;
-  const width = 180 + Math.floor(Math.random() * 120);
-  const height = 140 + Math.floor(Math.random() * 120);
-  const x = 130 + Math.floor(Math.random() * 520);
-  const y = 500 + Math.floor(Math.random() * 540);
-  state.zones.push({ x, y, w: width, h: height });
+  const dx = near.x === unit.x ? 0 : (near.x > unit.x ? 1 : -1);
+  const dy = near.y === unit.y ? 0 : (near.y > unit.y ? 1 : -1);
+  const nx = Math.max(0, Math.min(8, unit.x + dx));
+  const ny = Math.max(0, Math.min(8, unit.y + dy));
 
-  ui.tip.textContent = '扩张成功！新的领土可建设更多农庄。';
-  draw();
-  updateResources();
+  const blocked = activeBattle.units.some((u) => u.hp > 0 && u !== unit && u.x === nx && u.y === ny);
+  if (!blocked) {
+    unit.x = nx;
+    unit.y = ny;
+  }
+}
+
+function runBattleTurn() {
+  if (!activeBattle || activeBattle.finished) return;
+
+  const attackers = alive('A');
+  const defenders = alive('D');
+  attackers.forEach((u) => stepUnit(u, defenders.filter((e) => e.hp > 0)));
+  defenders.forEach((u) => stepUnit(u, attackers.filter((e) => e.hp > 0)));
+
+  activeBattle.units = activeBattle.units.filter((u) => u.hp > 0);
+  const a = alive('A').length;
+  const d = alive('D').length;
+
+  if (a === 0 || d === 0 || activeBattle.turn >= 40) {
+    activeBattle.finished = true;
+    activeBattle.winner = a > d ? 'A' : 'D';
+    finalizeBattle();
+  } else {
+    activeBattle.turn += 1;
+    ui.log.textContent = `回合 ${activeBattle.turn}: 攻方 ${a} / 守方 ${d}`;
+  }
+
+  drawBattle();
+  drawWorld();
+}
+
+function finalizeBattle() {
+  const attacker = players[activeBattle.attackerId];
+  const [tx, ty] = activeBattle.target;
+
+  if (activeBattle.winner === 'A') {
+    const oldOwner = getCell(tx, ty).owner;
+    setOwner(tx, ty, attacker.id);
+    attacker.territory += 1;
+    if (oldOwner >= 0 && oldOwner !== attacker.id) players[oldOwner].territory -= 1;
+    ui.log.textContent = `战斗结束：攻方胜利，占领 (${tx},${ty})。`;
+  } else {
+    ui.log.textContent = `战斗结束：守方坚守成功。`;
+  }
+
+  attacker.soldiers = Math.max(0, attacker.soldiers - 5);
+  activeBattle = null;
+  ui.nextTurn.disabled = true;
+  syncTopBar();
+}
+
+function tryUserAttack(x, y) {
+  const me = players[USER_ID];
+  if (me.soldiers < 5 || activeBattle) return;
+  if (getCell(x, y).owner !== -1) return;
+
+  const canReach = neighbors(x, y).some(([nx, ny]) => getCell(nx, ny).owner === USER_ID);
+  if (!canReach) return;
+
+  activeBattle = buildBattle(USER_ID, -1, [x, y]);
+  ui.log.textContent = `发起进攻 (${x},${y})，点击“执行下一回合”推进战斗。`;
+  ui.nextTurn.disabled = false;
+  drawBattle();
+}
+
+function aiExpandTick() {
+  for (let i = 1; i < players.length; i += 1) {
+    const p = players[i];
+    p.soldiers += 1 + Math.floor(p.territory / 6);
+    if (p.soldiers < 6) continue;
+    const t = findAttackTarget(p);
+    if (!t) continue;
+    if (Math.random() < 0.35) {
+      setOwner(t.to[0], t.to[1], p.id);
+      p.territory += 1;
+      p.soldiers -= 5;
+    }
+  }
+}
+
+function economyTick() {
+  const me = players[USER_ID];
+  me.soldiers += 2 + Math.floor(me.territory / 4);
+  aiExpandTick();
+  syncTopBar();
+  drawWorld();
+}
+
+function syncTopBar() {
+  const me = players[USER_ID];
+  ui.castlePos.textContent = `${me.x}, ${me.y}`;
+  ui.playerCount.textContent = `${TOTAL_PLAYERS}`;
+  ui.myTerritory.textContent = `${me.territory}`;
+  ui.mySoldiers.textContent = `${me.soldiers}`;
+}
+
+function drawWorld() {
+  const me = players[USER_ID];
+  const startX = Math.max(0, Math.min(MAP_SIZE - VIEW_SIZE, me.x - Math.floor(VIEW_SIZE / 2)));
+  const startY = Math.max(0, Math.min(MAP_SIZE - VIEW_SIZE, me.y - Math.floor(VIEW_SIZE / 2)));
+  const cell = worldCanvas.width / VIEW_SIZE;
+
+  wctx.clearRect(0, 0, worldCanvas.width, worldCanvas.height);
+  for (let y = 0; y < VIEW_SIZE; y += 1) {
+    for (let x = 0; x < VIEW_SIZE; x += 1) {
+      const wx = startX + x;
+      const wy = startY + y;
+      const c = getCell(wx, wy);
+      let fill = '#5f5a52';
+      if (c.owner === USER_ID) fill = '#2e8bd5';
+      else if (c.owner >= 0) fill = players[c.owner].color;
+      wctx.fillStyle = fill;
+      wctx.fillRect(x * cell, y * cell, cell - 1, cell - 1);
+
+      if (c.isCastle) {
+        wctx.fillStyle = '#ffe07a';
+        wctx.fillRect(x * cell + cell * 0.32, y * cell + cell * 0.32, cell * 0.36, cell * 0.36);
+      }
+    }
+  }
+
+  wctx.strokeStyle = '#fff';
+  wctx.lineWidth = 2;
+  const ux = (me.x - startX) * cell;
+  const uy = (me.y - startY) * cell;
+  wctx.strokeRect(ux + 1, uy + 1, cell - 2, cell - 2);
+
+  worldCanvas.dataset.startX = String(startX);
+  worldCanvas.dataset.startY = String(startY);
+}
+
+function drawBattle() {
+  const size = 9;
+  const cell = battleCanvas.width / size;
+  bctx.clearRect(0, 0, battleCanvas.width, battleCanvas.height);
+
+  for (let y = 0; y < size; y += 1) {
+    for (let x = 0; x < size; x += 1) {
+      bctx.fillStyle = (x + y) % 2 === 0 ? '#2c2520' : '#201a15';
+      bctx.fillRect(x * cell, y * cell, cell, cell);
+    }
+  }
+
+  if (!activeBattle) return;
+  for (const unit of activeBattle.units) {
+    bctx.fillStyle = unit.side === 'A' ? '#4fb4ff' : '#ff8f8f';
+    bctx.beginPath();
+    bctx.arc(unit.x * cell + cell / 2, unit.y * cell + cell / 2, cell * 0.28, 0, Math.PI * 2);
+    bctx.fill();
+  }
+}
+
+worldCanvas.addEventListener('click', (event) => {
+  const rect = worldCanvas.getBoundingClientRect();
+  const px = event.clientX - rect.left;
+  const py = event.clientY - rect.top;
+  const cell = worldCanvas.width / VIEW_SIZE;
+  const gx = Math.floor(px / cell);
+  const gy = Math.floor(py / cell);
+  const wx = Number(worldCanvas.dataset.startX) + gx;
+  const wy = Number(worldCanvas.dataset.startY) + gy;
+  tryUserAttack(wx, wy);
 });
 
-setInterval(updateResources, 1000);
-draw();
+ui.nextTurn.addEventListener('click', runBattleTurn);
+
+initPlayers();
+syncTopBar();
+drawWorld();
+drawBattle();
+setInterval(economyTick, 1200);
