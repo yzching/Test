@@ -2,13 +2,13 @@
 body {
   margin: 0;
   font-family: "Microsoft Yahei", sans-serif;
-  background: #17140f;
-  color: #eee5d8;
+  background: #15120e;
+  color: #f0e5d8;
 }
-#app { padding: 12px; max-width: 1200px; margin: 0 auto; }
+#app { padding: 12px; max-width: 1280px; margin: 0 auto; }
 .top-bar {
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
+  grid-template-columns: repeat(6, minmax(0, 1fr));
   gap: 8px;
   background: #2a2218;
   border: 1px solid #58422a;
@@ -16,12 +16,15 @@ body {
   border-radius: 10px;
   margin-bottom: 12px;
 }
-.top-bar strong { color: #ffd88a; }
-.layout {
-  display: grid;
-  grid-template-columns: 1fr 380px;
-  gap: 12px;
+.top-bar > div {
+  background: #1f1912;
+  border: 1px solid #4b3824;
+  border-radius: 8px;
+  padding: 6px;
+  font-size: 14px;
 }
+.top-bar strong { color: #ffd88a; }
+.layout { display: grid; grid-template-columns: 1fr 390px; gap: 12px; }
 .panel {
   background: #2a2218;
   border: 1px solid #58422a;
@@ -35,32 +38,35 @@ canvas {
   background: #111;
   image-rendering: pixelated;
 }
+.hint-row {
+  margin-top: 8px;
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+  color: #c9b195;
+}
 .hint { color: #c9b195; font-size: 14px; }
-.side .log {
+.log {
   margin: 8px 0;
-  min-height: 72px;
+  min-height: 84px;
   background: #1c1711;
   border: 1px solid #5c452e;
   padding: 8px;
   border-radius: 8px;
-  font-size: 14px;
+  font-size: 13px;
   line-height: 1.4;
 }
-#next-turn {
-  width: 100%;
+.row-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+button {
   border: none;
   border-radius: 8px;
-  background: #5fae45;
-  color: #15260f;
   font-weight: 700;
   padding: 10px;
   cursor: pointer;
 }
-#next-turn:disabled {
-  background: #6b655d;
-  color: #27221d;
-  cursor: not-allowed;
-}
+#next-turn { background: #5fae45; color: #15260f; }
+#auto-turn { background: #7ca2dc; color: #101b30; }
+button:disabled { background: #6b655d !important; color: #27221d !important; cursor: not-allowed; }
 ul { margin: 8px 0 0 16px; color: #d5c3a8; }
 
 @media (max-width: 1000px) {
