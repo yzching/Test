@@ -1,145 +1,69 @@
-:root {
-  --panel-bg: rgba(255, 248, 239, 0.94);
-  --brown: #6f4d32;
-  --line: #9d7f64;
-}
-
 * { box-sizing: border-box; }
 body {
   margin: 0;
+  font-family: "Microsoft Yahei", sans-serif;
+  background: #17140f;
+  color: #eee5d8;
+}
+#app { padding: 12px; max-width: 1200px; margin: 0 auto; }
+.top-bar {
   display: grid;
-  place-content: center;
-  min-height: 100vh;
-  background: #d59b58;
-  font-family: "Trebuchet MS", "Microsoft Yahei", sans-serif;
-  color: var(--brown);
+  grid-template-columns: repeat(5, 1fr);
+  gap: 8px;
+  background: #2a2218;
+  border: 1px solid #58422a;
+  padding: 10px;
+  border-radius: 10px;
+  margin-bottom: 12px;
 }
-
-#game-shell {
-  width: min(100vw, 900px);
-  height: min(100vh, 1500px);
-  aspect-ratio: 3 / 5;
-  position: relative;
-  border: 8px solid #8d6340;
-  border-radius: 18px;
-  overflow: hidden;
-  box-shadow: 0 16px 30px rgba(58, 35, 15, 0.25);
+.top-bar strong { color: #ffd88a; }
+.layout {
+  display: grid;
+  grid-template-columns: 1fr 380px;
+  gap: 12px;
 }
-
-#world {
-  width: 100%;
-  height: 100%;
-  image-rendering: pixelated;
+.panel {
+  background: #2a2218;
+  border: 1px solid #58422a;
+  border-radius: 10px;
+  padding: 10px;
+}
+canvas {
   display: block;
+  width: 100%;
+  border: 1px solid #7a5d3d;
+  background: #111;
+  image-rendering: pixelated;
 }
-
-.hud {
-  position: absolute;
-  background: var(--panel-bg);
-  border: 3px solid var(--line);
-  border-radius: 14px;
+.hint { color: #c9b195; font-size: 14px; }
+.side .log {
+  margin: 8px 0;
+  min-height: 72px;
+  background: #1c1711;
+  border: 1px solid #5c452e;
   padding: 8px;
-}
-
-.top-left { top: 16px; left: 16px; width: 390px; }
-.resource-line {
-  display: grid;
-  grid-template-columns: 1fr auto auto;
-  gap: 8px;
-  align-items: center;
-  margin-bottom: 6px;
-}
-.resource-line:last-child { margin-bottom: 0; }
-.resource-line strong { font-size: 28px; }
-.resource-line em { color: #819e38; font-style: normal; font-weight: 700; }
-
-.top-right { top: 16px; right: 16px; width: 250px; display: grid; gap: 8px; }
-.badge {
-  border: 2px solid #cfb297;
-  border-radius: 10px;
-  padding: 8px;
-  font-size: 24px;
-  font-weight: 700;
-  display: flex;
-  justify-content: space-between;
-}
-.action {
-  border: none;
-  border-radius: 10px;
-  padding: 10px;
-  font-size: 22px;
-  cursor: pointer;
-  background: #98cd52;
-  color: #325115;
-  font-weight: 700;
-}
-
-.side-left {
-  top: 300px;
-  left: 16px;
-  width: 140px;
-  display: grid;
-  gap: 8px;
-}
-.side-item {
-  border: 2px solid #d1b496;
-  border-radius: 10px;
-  background: #f7ede2;
-  padding: 10px;
-  display: flex;
-  justify-content: space-between;
-  font-size: 22px;
-  font-weight: 700;
-}
-
-.bottom {
-  left: 50%;
-  transform: translateX(-50%);
-  bottom: 16px;
-  width: calc(100% - 30px);
-  display: flex;
-  justify-content: space-between;
-  gap: 8px;
-}
-.menu-btn {
-  flex: 1;
-  font-size: 20px;
-  font-weight: 700;
-  border-radius: 12px;
-  border: 3px solid #b59679;
-  background: #f6ebdf;
-  padding: 12px 6px;
-  cursor: pointer;
-}
-
-.chat {
-  position: absolute;
-  left: 170px;
-  top: 380px;
-  background: rgba(37, 20, 7, 0.65);
-  color: #fff;
   border-radius: 8px;
-  padding: 6px 10px;
-  font-size: 24px;
+  font-size: 14px;
+  line-height: 1.4;
 }
-.tip {
-  position: absolute;
-  right: 16px;
-  top: 300px;
-  width: 280px;
-  background: rgba(255, 250, 239, 0.9);
-  border: 2px solid #ab8767;
-  border-radius: 10px;
+#next-turn {
+  width: 100%;
+  border: none;
+  border-radius: 8px;
+  background: #5fae45;
+  color: #15260f;
+  font-weight: 700;
   padding: 10px;
-  font-size: 20px;
+  cursor: pointer;
 }
+#next-turn:disabled {
+  background: #6b655d;
+  color: #27221d;
+  cursor: not-allowed;
+}
+ul { margin: 8px 0 0 16px; color: #d5c3a8; }
 
-@media (max-width: 920px) {
-  .top-left { width: 52%; }
-  .top-right { width: 40%; }
-  .resource-line strong { font-size: 22px; }
-  .chat { left: 150px; font-size: 18px; top: 360px; }
-  .tip { font-size: 16px; width: 220px; }
-  .bottom { gap: 4px; }
-  .menu-btn { font-size: 16px; }
+@media (max-width: 1000px) {
+  .layout { grid-template-columns: 1fr; }
+  .top-bar { grid-template-columns: 1fr 1fr; }
 }
