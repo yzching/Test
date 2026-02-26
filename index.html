@@ -3,36 +3,44 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>600x600 战略占地 Demo</title>
+    <title>九万亩风格战略 Demo</title>
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
     <div id="app">
       <header class="top-bar">
-        <div>👑 主城坐标: <strong id="castle-pos"></strong></div>
+        <div>👑 主城: <strong id="castle-pos"></strong></div>
         <div>🗺 地图: <strong>600 x 600</strong></div>
-        <div>👥 对局人数: <strong id="player-count">500</strong></div>
-        <div>🏳 我的领土: <strong id="my-territory">1</strong></div>
-        <div>🪖 我的士兵: <strong id="my-soldiers">30</strong></div>
+        <div>👥 对局: <strong id="player-count">500</strong></div>
+        <div>🏳 领土: <strong id="my-territory">1</strong></div>
+        <div>🪖 兵力: <strong id="my-soldiers">30</strong></div>
+        <div>🚶 行军: <strong id="marching-count">0</strong></div>
       </header>
 
       <main class="layout">
         <section class="panel">
-          <h3>世界地图（局部视野）</h3>
-          <canvas id="world" width="720" height="720"></canvas>
-          <p class="hint">点击与你领土相邻的“荒地”发起进攻。蓝色=你，灰色=荒地，其它颜色=AI势力。</p>
+          <h3>世界地图（局部战场）</h3>
+          <canvas id="world" width="780" height="780"></canvas>
+          <div class="hint-row">
+            <span>蓝色=我方，灰色=荒地，彩色=其它玩家</span>
+            <span id="view-pos">视野: (0,0)</span>
+          </div>
+          <p class="hint">点击与你领土接壤的荒地：将派出一支部队行军，抵达后触发 9x9 回合制自走棋战斗。</p>
         </section>
 
         <section class="panel side">
-          <h3>战斗（9x9）</h3>
+          <h3>格子战斗（9x9）</h3>
           <canvas id="battle" width="360" height="360"></canvas>
           <div id="battle-log" class="log">等待战斗...</div>
-          <button id="next-turn" disabled>执行下一回合</button>
-          <h4>说明</h4>
+          <div class="row-btns">
+            <button id="next-turn" disabled>下一回合</button>
+            <button id="auto-turn" disabled>自动10回合</button>
+          </div>
+          <h4>规则（接近九万亩核心循环）</h4>
           <ul>
-            <li>每个格子是一场 9x9 的回合制自走旗战斗。</li>
-            <li>单位会自动向最近敌人移动并攻击。</li>
-            <li>攻方胜利即可占领该格子并扩张领土。</li>
+            <li>500人同图，每人初始仅一座主城。</li>
+            <li>扩张只能从边界向荒地推进，形成地缘战略。</li>
+            <li>每块地单独进入 9x9 回合制自动战斗。</li>
           </ul>
         </section>
       </main>
